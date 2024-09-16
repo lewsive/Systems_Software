@@ -17,6 +17,7 @@ int main(int argc, char *argv[]) {
         perror("Error opening file");
         return -1;
     }
+    printf("dick");
 
     //Read each line from the file and print it
         while (fgets(buffer, sizeof(buffer), file) != NULL) {
