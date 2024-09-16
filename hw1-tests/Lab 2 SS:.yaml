@@ -1,8 +1,0 @@
-Lab 2 SS:
-The preprocessor code gets rid of whitespace, comments, and replaces all variables with their exact value.
-Union:
-    -allows different data types to store data in the same place.
-    -memory efficiency
-    -single active member
-    -size determination
-If you store a different value in a  union, the previous value is overwritten.
