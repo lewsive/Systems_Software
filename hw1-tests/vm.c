@@ -1,11 +1,13 @@
 #include <stdio.h>
+#include <string.h>
 
 int main(int argc, char *argv[]) {
 
-    if (argv[1] == "-p" ) {
-        printf("First argument: %s\n", argv[1]);
+    //arg detector in order to determine if -p is in the args
+    if (strcmp(argv[1],"-p") == 0) {
+        printf("print mode");
     } else {
-        printf("No arguments provided.\n");
+        printf("regular mode");
     }
 
     FILE *file;
