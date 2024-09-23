@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "*.ejs": "html",
+        "string.h": "c",
+        "utilities.h": "c"
+    }
+}
