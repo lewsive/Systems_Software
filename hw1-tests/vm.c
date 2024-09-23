@@ -3,8 +3,6 @@
 #include "bof.h"
 #include "utilities.c"
 
-int parse_bof_header(BOFHeader *header, BOFFILE bf);
-
 int main(int argc, char *argv[]) {
     
     // Check if the correct number of arguments is provided
