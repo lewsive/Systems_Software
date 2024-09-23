@@ -26,6 +26,20 @@ int pop() {
     return stack[--sp];  // Pop value from the stack
 }
 
+// Function to convert a word to binary string
+char *word_to_binary(word_type word) {
+    char *binary = (char *)malloc(sizeof(char) * (WORD_SIZE + 1));
+    if (binary == NULL) {
+        fprintf(stderr, "Memory allocation error\n");
+        exit(EXIT_FAILURE);
+    }
+    for (int i = WORD_SIZE - 1; i >= 0; i--) {
+        binary[i] = (word >> i) & 1 ? '1' : '0';
+    }
+    binary[WORD_SIZE] = '\0';
+    return binary;
+}
+
 int main(int argc, char *argv[]) {
     // Check if the correct number of arguments is provided
     if (argc < 2) {
@@ -67,6 +81,11 @@ int main(int argc, char *argv[]) {
         printf("  BOF Word %d: %x\n", i, bof_word); // Print the bof_word value
         push(bof_word);// Push word onto the stack
         size_t byte_amt = bof_file_bytes(bf);
+
+        // Convert the word to binary and print it
+        char *binary_word = word_to_binary(bof_word);
+        printf("    Binary: %s\n", binary_word);
+        free(binary_word);
 
     }
 
