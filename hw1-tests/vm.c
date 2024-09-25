@@ -194,14 +194,19 @@ int main(int argc, char *argv[]) {
     GPR[2] = bf_header.stack_bottom_addr;   // $fp
     PC = bf_header.text_start_address;
 
-    bin_instr_t inst = instruction_read(bf);
-    // syscall_type mySysType = instruction_syscall_number(inst);
-    instr_type myType = instruction_type(inst);
-    // printf("Syscall number: %d\n",mySysType);
-    const char* mnemonic = instruction_mnemonic(inst);
-    printf("%s\n",mnemonic);
-    printf("opcode: %d\n",inst.comp.op);
-    printf("Instruction type: %d\n",myType);
+    bin_instr_t inst;
+    const char* mnemonic;
+
+    for(int i = 0;i<bf_header.text_length;i++){
+        inst = instruction_read(bf);
+        mnemonic = instruction_mnemonic(inst);
+        printf("%s\n",mnemonic);
+    }
+
+    // bin_instr_t inst = instruction_read(bf);
+    // // syscall_type mySysType = instruction_syscall_number(inst);
+    // instr_type myType = instruction_type(inst);
+    // printf("Syscall number: %d\n",mySysType)
 
     // Load instructions into memory
     bof_read_bytes(bf, bf_header.text_length * sizeof(word_type), (void*)&((word_type*)memory)[PC]);
