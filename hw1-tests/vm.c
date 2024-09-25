@@ -1,13 +1,27 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "bof.h"
-#include "utilities.c"
+#include "utilities.h"
 #include "machine_types.h"
+#include "instruction.h"
+#include "regname.h"
+
+#define MEMORY_SIZE_IN_WORDS 32768
 
 // Global stack and stack pointer
 int stack[MEMORY_SIZE_IN_WORDS];  // Stack array using MEMORY_SIZE_IN_WORDS
+char memory[MEMORY_SIZE_IN_WORDS];  // Assuming memory is an array of char
+
 int sp = 0;                       // Stack pointer initialized to 0
 void *buffer;
+
+// Registers
+word_type GPR[8];  // General Purpose Registers
+word_type PC;      // Program Counter
+word_type HI;      // High part of multiplication result or remainder of division
+word_type LO;      // Low part of multiplication result or quotient of division
+
 // Function to push values onto the stack
 void push(int value) {
     if (sp >= MEMORY_SIZE_IN_WORDS) {
@@ -28,16 +42,115 @@ int pop() {
 
 // Function to convert a word to binary string
 char *word_to_binary(word_type word) {
-    char *binary = (char *)malloc(sizeof(char) * (WORD_SIZE + 1));
-    if (binary == NULL) {
-        fprintf(stderr, "Memory allocation error\n");
-        exit(EXIT_FAILURE);
+    static char binary_str[33];  // 32 bits + null terminator
+    binary_str[32] = '\0';       // Null terminator
+
+    for (int i = 31; i >= 0; i--) {
+        binary_str[i] = (word & 1) ? '1' : '0';
+        word >>= 1;
     }
-    for (int i = WORD_SIZE - 1; i >= 0; i--) {
-        binary[i] = (word >> i) & 1 ? '1' : '0';
+
+    return binary_str;
+}
+
+// Function to execute a single instruction
+void execute_instruction(bin_instr_t instruction) {
+    instr_type type = instruction_type(instruction);
+
+    switch (type) {
+        case comp_instr_type:
+            switch (instruction.comp.func) {
+                case NOP_F:
+                    // Do nothing
+                    break;
+                case ADD_F:
+                    GPR[instruction.comp.rt] = GPR[instruction.comp.rs] + GPR[instruction.comp.ot];
+                    break;
+                case SUB_F:
+                    GPR[instruction.comp.rt] = GPR[instruction.comp.rs] - GPR[instruction.comp.ot];
+                    break;
+                // Add more cases for other computational instructions
+                default:
+                    fprintf(stderr, "Unknown computational function: %u\n", instruction.comp.func);
+                    exit(EXIT_FAILURE);
+            }
+            break;
+        case other_comp_instr_type:
+            switch (instruction.othc.func) {
+                case LIT_F:
+                    GPR[instruction.othc.reg] = instruction.othc.arg;
+                    break;
+                case ARI_F:
+                    GPR[instruction.othc.reg] += instruction.othc.arg;
+                    break;
+                case SRI_F:
+                    GPR[instruction.othc.reg] -= instruction.othc.arg;
+                    break;
+                // Add more cases for other computational instructions
+                default:
+                    fprintf(stderr, "Unknown other computational function: %u\n", instruction.othc.func);
+                    exit(EXIT_FAILURE);
+            }
+            break;
+        case immed_instr_type:
+            switch (instruction.immed.op) {
+                case ADDI_O:
+                    GPR[instruction.immed.reg] += instruction.immed.immed;
+                    break;
+                case ANDI_O:
+                    GPR[instruction.immed.reg] &= instruction.immed.immed;
+                    break;
+                // Add more cases for immediate instructions
+                default:
+                    fprintf(stderr, "Unknown immediate opcode: %u\n", instruction.immed.op);
+                    exit(EXIT_FAILURE);
+            }
+            break;
+        case jump_instr_type:
+            switch (instruction.jump.op) {
+                case JMPA_O:
+                    PC = instruction.jump.addr;
+                    break;
+                case CALL_O:
+                    GPR[7] = PC;  // Save return address in $ra
+                    PC = instruction.jump.addr;
+                    break;
+                case RTN_O:
+                    PC = GPR[7];  // Return to saved address
+                    break;
+                default:
+                    fprintf(stderr, "Unknown jump opcode: %u\n", instruction.jump.op);
+                    exit(EXIT_FAILURE);
+            }
+            break;
+        case syscall_instr_type:
+            switch (instruction.syscall.code) {
+                case exit_sc:
+                    exit(instruction.syscall.offset);
+                case print_str_sc:
+                    printf("%s", (char *)&memory[GPR[instruction.syscall.reg] + instruction.syscall.offset]);
+                    break;
+                case print_char_sc:
+                    putchar(memory[GPR[instruction.syscall.reg] + instruction.syscall.offset]);
+                    break;
+                case read_char_sc:
+                    memory[GPR[instruction.syscall.reg] + instruction.syscall.offset] = getchar();
+                    break;
+                case start_tracing_sc:
+                    // Start tracing
+                    break;
+                case stop_tracing_sc:
+                    // Stop tracing
+                    break;
+                default:
+                    fprintf(stderr, "Unknown syscall code: %u\n", instruction.syscall.code);
+                    exit(EXIT_FAILURE);
+            }
+            break;
+        default:
+            fprintf(stderr, "Unknown instruction type: %u\n", type);
+            exit(EXIT_FAILURE);
     }
-    binary[WORD_SIZE] = '\0';
-    return binary;
 }
 
 int main(int argc, char *argv[]) {
@@ -75,22 +188,35 @@ int main(int argc, char *argv[]) {
     printf("  Data Length: %d words\n", bf_header.data_length);
     printf("  Stack Bottom Address: 0x%08X\n", bf_header.stack_bottom_addr);
 
-    // Reading words from the BOF file and pushing onto the stack
-    for (int i = 0; i < bf_header.text_length; i++) {
-        word_type bof_word = bof_read_word(bf);
-        printf("  BOF Word %d: %x\n", i, bof_word); // Print the bof_word value
-        push(bof_word);// Push word onto the stack
-        size_t byte_amt = bof_file_bytes(bf);
+    // Initialize registers
+    GPR[0] = bf_header.data_start_address;  // $gp
+    GPR[1] = bf_header.stack_bottom_addr;   // $sp
+    GPR[2] = bf_header.stack_bottom_addr;   // $fp
+    PC = bf_header.text_start_address;
 
-        // Convert the word to binary and print it
-        char *binary_word = word_to_binary(bof_word);
-        printf("    Binary: %s\n", binary_word);
-        free(binary_word);
+    bin_instr_t inst = instruction_read(bf);
+    // syscall_type mySysType = instruction_syscall_number(inst);
+    instr_type myType = instruction_type(inst);
+    // printf("Syscall number: %d\n",mySysType);
+    const char* mnemonic = instruction_mnemonic(inst);
+    printf("%s\n",mnemonic);
+    printf("opcode: %d\n",inst.comp.op);
+    printf("Instruction type: %d\n",myType);
 
-    }
+    // Load instructions into memory
+    bof_read_bytes(bf, bf_header.text_length * sizeof(word_type), (void*)&((word_type*)memory)[PC]);
+
+    // Load data into memory
+    bof_read_bytes(bf, bf_header.data_length * sizeof(word_type), (void*)&((word_type*)memory)[bf_header.data_start_address]);
 
     // Close the BOF file
     bof_close(bf);
+
+    // Execute the program
+    while (PC < MEMORY_SIZE_IN_WORDS) {
+        bin_instr_t instruction = *(bin_instr_t*)&((word_type*)memory)[PC++];
+        execute_instruction(instruction);
+    }
 
     return 0;
 }
