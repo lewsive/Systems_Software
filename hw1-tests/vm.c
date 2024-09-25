@@ -9,10 +9,6 @@
 
 #define MEMORY_SIZE_IN_WORDS 32768
 
-void print_registers();
-void print_memory(int x,int y);
-void print_stack();
-
 // Global stack and stack pointer
 int stack[MEMORY_SIZE_IN_WORDS];  // Stack array using MEMORY_SIZE_IN_WORDS
 char memory[MEMORY_SIZE_IN_WORDS];  // Assuming memory is an array of char
@@ -60,101 +56,171 @@ char *word_to_binary(word_type word) {
 // Function to execute a single instruction
 void execute_instruction(bin_instr_t instruction) {
     instr_type type = instruction_type(instruction);
-    printf("%d",instruction.comp.op);
+    printf("type: %d ",type);
+    printf("opcode: %d ",instruction.comp.op); //opcode
+    printf("func? %d ",instruction.comp.func);
 
-    switch (type) {
-        case comp_instr_type:
-            switch (instruction.comp.func) {
-                case NOP_F:
-                    // Do nothing
+    // if(instruction.comp.op == 0){
+    //     if(instruction.comp.func == 1){
+    //         printf("There's an add in my shit dawg");
+    //     }
+    // }
+
+    switch(instruction.comp.op){
+        case 0:
+            switch(instruction.comp.func){
+                case 0:
+                    printf("NOP\n");
                     break;
-                case ADD_F:
-                    GPR[instruction.comp.rt] = GPR[instruction.comp.rs] + GPR[instruction.comp.ot];
+                case 1:
+                    printf("ADD\n");
                     break;
-                case SUB_F:
-                    GPR[instruction.comp.rt] = GPR[instruction.comp.rs] - GPR[instruction.comp.ot];
+                case 2:
+                    printf("SUB\n");
                     break;
-                // Add more cases for other computational instructions
-                default:
-                    fprintf(stderr, "Unknown computational function: %u\n", instruction.comp.func);
-                    exit(EXIT_FAILURE);
-            }
-            break;
-        case other_comp_instr_type:
-            switch (instruction.othc.func) {
-                case LIT_F:
-                    GPR[instruction.othc.reg] = instruction.othc.arg;
+                case 3:
+                    printf("CPW\n");
                     break;
-                case ARI_F:
-                    GPR[instruction.othc.reg] += instruction.othc.arg;
+                case 5:
+                    printf("AND\n");
                     break;
-                case SRI_F:
-                    GPR[instruction.othc.reg] -= instruction.othc.arg;
+                case 6:
+                    printf("BOR\n");
                     break;
-                // Add more cases for other computational instructions
-                default:
-                    fprintf(stderr, "Unknown other computational function: %u\n", instruction.othc.func);
-                    exit(EXIT_FAILURE);
-            }
-            break;
-        case immed_instr_type:
-            switch (instruction.immed.op) {
-                case ADDI_O:
-                    GPR[instruction.immed.reg] += instruction.immed.immed;
+                case 7:
+                    printf("NOR\n");
                     break;
-                case ANDI_O:
-                    GPR[instruction.immed.reg] &= instruction.immed.immed;
+                case 8:
+                    printf("XOR\n");
                     break;
-                // Add more cases for immediate instructions
-                default:
-                    fprintf(stderr, "Unknown immediate opcode: %u\n", instruction.immed.op);
-                    exit(EXIT_FAILURE);
-            }
-            break;
-        case jump_instr_type:
-            switch (instruction.jump.op) {
-                case JMPA_O:
-                    PC = instruction.jump.addr;
+                case 9:
+                    printf("LWR\n");
                     break;
-                case CALL_O:
-                    GPR[7] = PC;  // Save return address in $ra
-                    PC = instruction.jump.addr;
+                case 10:
+                    printf("SWR\n");
                     break;
-                case RTN_O:
-                    PC = GPR[7];  // Return to saved address
+                case 11:
+                    printf("SCA\n");
+                    break;
+                case 12:
+                    printf("LWI\n");
+                    break;
+                case 13:
+                    printf("NEG\n");
                     break;
                 default:
-                    fprintf(stderr, "Unknown jump opcode: %u\n", instruction.jump.op);
-                    exit(EXIT_FAILURE);
-            }
-            break;
-        case syscall_instr_type:
-            switch (instruction.syscall.code) {
-                case exit_sc:
-                    exit(instruction.syscall.offset);
-                case print_str_sc:
-                    printf("%s", (char *)&memory[GPR[instruction.syscall.reg] + instruction.syscall.offset]);
+                    printf("error in opcode 0");
+            }break;
+
+        case 1:{
+            switch(instruction.comp.func){
+                case 1:
+                    printf("LIT\n");
                     break;
-                case print_char_sc:
-                    putchar(memory[GPR[instruction.syscall.reg] + instruction.syscall.offset]);
+                case 2:
+                    printf("ARI\n");
                     break;
-                case read_char_sc:
-                    memory[GPR[instruction.syscall.reg] + instruction.syscall.offset] = getchar();
+                case 3:
+                    printf("SRI\n");
                     break;
-                case start_tracing_sc:
-                    // Start tracing
+                case 4:
+                    printf("MUL\n");
                     break;
-                case stop_tracing_sc:
-                    // Stop tracing
+                case 5:
+                    printf("DIV\n");
+                    break;
+                case 6:
+                    printf("CFHI\n");
+                    break;
+                case 7:
+                    printf("CFLO\n");
+                    break;
+                case 8:
+                    printf("SLL\n");
+                    break;
+                case 9:
+                    printf("SRL\n");
+                    break;
+                case 10:
+                    printf("JMP\n");
+                    break;
+                case 11:
+                    printf("CSI\n");
+                    break;
+                case 12:
+                    printf("JREL\n");
+                    break;
+                    //needs work probably
+                case 15:
+                    printf("SYS\n");
+                        syscall_type mySysType = instruction_syscall_number(instruction);
+                        switch(mySysType){
+                            case 1:
+                                printf("EXIT\n");
+                                break;
+                            case 2:
+                                printf("PSTR\n");
+                                break;
+                            case 4:
+                                printf("PCH\n");
+                                break;
+                            case 5:
+                                printf("RCH\n");
+                                break;
+                            case 2046:
+                                printf("STRA\n");
+                            case 2047:
+                                printf("NOTR\n");
+                            
+                        }break;
                     break;
                 default:
-                    fprintf(stderr, "Unknown syscall code: %u\n", instruction.syscall.code);
-                    exit(EXIT_FAILURE);
-            }
+                    printf("error in opcode 1");
+            }break;
+        }
+        
+        case 2:
+            printf("ADDI\n");
             break;
-        default:
-            fprintf(stderr, "Unknown instruction type: %u\n", type);
-            exit(EXIT_FAILURE);
+        case 3:
+            printf("ANDI");
+            break;
+        case 4:
+            printf("BORI");
+            break;
+        case 5:
+            printf("NORI");
+            break;
+        case 6:
+            printf("XORI");
+            break;
+        case 7:
+            printf("BEQ");
+            break;
+        case 8:
+            printf("BGEZ");
+            break;
+        case 9:
+            printf("BGTZ");
+            break;
+        case 10:
+            printf("BLEZ");
+            break;
+        case 11:
+            printf("BLTZ");
+            break;
+        case 12:
+            printf("BNE");
+            break;
+        case 13:
+            printf("JMPA");
+            break;
+        case 14:
+            printf("CALL");
+            break;
+        case 15:
+            printf("RTN");
+            break;
     }
 }
 
@@ -205,14 +271,16 @@ int main(int argc, char *argv[]) {
     for(int i = 0;i<bf_header.text_length;i++){
         inst = instruction_read(bf);
         mnemonic = instruction_mnemonic(inst);
-        printf("%s\n",mnemonic);
         execute_instruction(inst);
+        // printf("%s\n",mnemonic);
+        
     }
 
     // bin_instr_t inst = instruction_read(bf);
     // // syscall_type mySysType = instruction_syscall_number(inst);
-    // instr_type myType = instruction_type(inst);
+
     // printf("Syscall number: %d\n",mySysType)
+        // instr_type myType = instruction_type(inst);
 
     // Load instructions into memory
     bof_read_bytes(bf, bf_header.text_length * sizeof(word_type), (void*)&((word_type*)memory)[PC]);
@@ -223,10 +291,9 @@ int main(int argc, char *argv[]) {
     // Close the BOF file
     bof_close(bf);
 
-    printf("PC: %d",PC);
     // Execute the program
     // while (PC < MEMORY_SIZE_IN_WORDS) {
-    //     bin_instr_t instruction =
+    //     bin_instr_t instruction
     //     execute_instruction(instruction);
     // }
 
@@ -235,26 +302,7 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
-void print_registers() {
-    printf("Register Values:\n");
-    for (int i = 0; i < 8; i++) {
-        printf("GPR[%d]: 0x%08X\n", i, GPR[i]);
-    }
-    printf("PC: 0x%08X\n", PC);
-    printf("HI: 0x%08X\n", HI);
-    printf("LO: 0x%08X\n", LO);
-}
-
-void print_memory(int start, int end) {
-    printf("Memory dump from 0x%08X to 0x%08X:\n", start, end);
-    for (int i = start; i < end; i += 4) {
-        printf("0x%08X: 0x%08X\n", i, *(word_type*)&memory[i]);
-    }
-}
-
-void print_stack() {
-    printf("Stack (Top to Bottom):\n");
-    for (int i = sp - 1; i >= 0; i--) {
-        printf("stack[%d]: 0x%08X\n", i, stack[i]);
-    }
-}
+//implement all code for the instructions in the switch cases.
+//figure out trace print statements
+//put in stack
+//make makefile
