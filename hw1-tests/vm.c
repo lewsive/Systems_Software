@@ -9,6 +9,10 @@
 
 #define MEMORY_SIZE_IN_WORDS 32768
 
+void print_registers();
+void print_memory(int x,int y);
+void print_stack();
+
 // Global stack and stack pointer
 int stack[MEMORY_SIZE_IN_WORDS];  // Stack array using MEMORY_SIZE_IN_WORDS
 char memory[MEMORY_SIZE_IN_WORDS];  // Assuming memory is an array of char
@@ -56,6 +60,7 @@ char *word_to_binary(word_type word) {
 // Function to execute a single instruction
 void execute_instruction(bin_instr_t instruction) {
     instr_type type = instruction_type(instruction);
+    printf("%d",instruction.comp.op);
 
     switch (type) {
         case comp_instr_type:
@@ -201,6 +206,7 @@ int main(int argc, char *argv[]) {
         inst = instruction_read(bf);
         mnemonic = instruction_mnemonic(inst);
         printf("%s\n",mnemonic);
+        execute_instruction(inst);
     }
 
     // bin_instr_t inst = instruction_read(bf);
@@ -217,11 +223,38 @@ int main(int argc, char *argv[]) {
     // Close the BOF file
     bof_close(bf);
 
+    printf("PC: %d",PC);
     // Execute the program
-    while (PC < MEMORY_SIZE_IN_WORDS) {
-        bin_instr_t instruction = *(bin_instr_t*)&((word_type*)memory)[PC++];
-        execute_instruction(instruction);
-    }
+    // while (PC < MEMORY_SIZE_IN_WORDS) {
+    //     bin_instr_t instruction =
+    //     execute_instruction(instruction);
+    // }
 
+    
+    
     return 0;
+}
+
+void print_registers() {
+    printf("Register Values:\n");
+    for (int i = 0; i < 8; i++) {
+        printf("GPR[%d]: 0x%08X\n", i, GPR[i]);
+    }
+    printf("PC: 0x%08X\n", PC);
+    printf("HI: 0x%08X\n", HI);
+    printf("LO: 0x%08X\n", LO);
+}
+
+void print_memory(int start, int end) {
+    printf("Memory dump from 0x%08X to 0x%08X:\n", start, end);
+    for (int i = start; i < end; i += 4) {
+        printf("0x%08X: 0x%08X\n", i, *(word_type*)&memory[i]);
+    }
+}
+
+void print_stack() {
+    printf("Stack (Top to Bottom):\n");
+    for (int i = sp - 1; i >= 0; i--) {
+        printf("stack[%d]: 0x%08X\n", i, stack[i]);
+    }
 }
